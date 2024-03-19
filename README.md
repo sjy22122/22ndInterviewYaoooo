@@ -15,29 +15,126 @@ There are four pages in the application.
 * 4 - Receiver Page
 
 ## Code
+Some parts of the code may be simplified to improve readability.
 
 ### 1. Common documents
-* CanvasResizeManager
+* CanvasResizeManager.cs
+  * This file is used for Canvas auto-resizing. However it was not used in the final prototype.
+
   ```
-  code blocks for commands
+  float Screen_Width;
+  float Screen_Height;
+  void Start()
+  {
+      Screen_Width = this.gameObject.GetComponent<RectTransform>().rect.width;
+      Screen_Height = this.gameObject.GetComponent<RectTransform>().rect.height;
+  }
   ```
-* GettingMessage
+  
+* GettingMessage.cs
+  * This file is used for getting an "Message" object from Firebase. The object contains all the information about this hybrid gift. Once we get the object, we can change the game objects correspondingly.
+  
   ```
-  code blocks for commands
+  using Firebase.Firestore;
+
+  [FirestoreData]
+  public struct Message
+  {
+    [FirestoreProperty]
+    public string Drink1 { get; set; }
+
+    [FirestoreProperty]
+    public int DrinkDecoration { get; set; }
+
+    (...)
+  }
   ```
-* LoginManagement
+
+* LoginManagement.cs
+  * This is used for Login. In Home Page, the user can choose either "Login as Giver" or "Login as Receiver". After that, the user will be sent to Login Page.
+  * In Login Page, once the user click the login button, the system is going to check the "userID" and "OrderNumber".
+  * If the details are not correct, the user is able to enter the details again.
+
   ```
-  code blocks for commands
+  public class LoginManagement : MonoBehaviour
+  {
+    (...)
+    public static string input_userID; //can be used later
+    public static string input_OrderNumber; //can be used later
+    FirebaseFirestore database; //Firebase database object
+    (...)
+  
+    void Start()
+    {
+        error_message.SetActive(false);
+        database = FirebaseFirestore.DefaultInstance;
+    }
+    IEnumerator ShowNotification()
+    {
+        yield return new WaitForSeconds(3.0f);  //wait for seconds
+        error_message.SetActive(false);
+    }
+
+    public void TryLogin()
+    {
+      
+      Function1 //check the details in database, then get the result back
+      {
+            DocumentSnapshot snapshot = task.Result;
+            if (snapshot.Exists == false) // if details are wrong
+            {
+                Debug.Log("order does not exist!");
+                (...)
+            }
+            else // if details are correct
+            {
+                input_userID = userID_UI.text;
+                input_OrderNumber = OrderNumber_UI.text;
+
+                if (ScenesManagement.current_role == 1) //if it's giver login and going to giver side
+                {
+                    SceneManager.LoadScene("Giver_side");
+                }
+                else if (ScenesManagement.current_role == 2) //if it's receiver login and going to receiver side
+                {
+                    SceneManager.LoadScene("Receiver_side");
+                }
+            }
+        });
+    }
+  }
   ```
-* ScenesManagement
+* ScenesManagement.cs
+  * This function is used for transferring the user between different pages.
   ```
-  code blocks for commands
+  public class ScenesManagement : MonoBehaviour
+  {
+    public static int current_role; //1: giver, 2: receiver
+
+    public void ToHomePage()
+    {
+        SceneManager.LoadScene("HomePage");
+    }
+
+    public void GiverToLogin()
+    {
+        current_role = 1;
+        SceneManager.LoadScene("Login");
+    }
+    public void ReceiverToLogin()
+    {
+        current_role = 2;
+        SceneManager.LoadScene("Login");
+    }
+  
+  }
   ```
 
 ### 2. Giver Page
-* UploadManagement
+* UploadManagement.cs
+
   ```
-  code blocks for commands
+  
   ```
 
 ### 3. Receiver Page
