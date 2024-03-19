@@ -132,31 +132,223 @@ Some parts of the code may be simplified to improve readability.
 
 ### 2. Giver Page
 * UploadManagement.cs
+  * The giver can upload image from his or her mobile phone
+  * The giver can record 20s voice message
+  * The giver can upload text message
+  * The giver can make the customized recipe
+  * All the information of this hybrid gift can be uploaded and downloaded from the database
 
   ```
+  public class UploadManagement : MonoBehaviour
+  {
+    public string userID;
+    public string OrderNumber;
+    //for page 1 upload
+    (...public objects * 5)
+    //for page 2 upload drink
+    (...public objects * 10)
+
+    public GameObject screen_canvas;
+
+    // For Firebase
+    (...Firebase objects and path references * 6)
   
+    MicController mic; //has reference, from Asset Store
+
+    Texture2D downloaded_image; // image downloaded from database
+
+    Message message; // Firebase "Message" object
+
+    public float original_imageUI_width;
+    public float original_imageUI_height;
+  
+    string Drink1; //A, B, C
+    string Drink2;
+    string Drink3;
+    int DrinkDecoration;  //1 - 3
+    string DrinkName;
+
+    // For game objects in Unity
+    (...public objects * 7)
+
+    // For the liquid in the glass
+    public GameObject liquid_object;
+  
+    Color bottleA_color = new Color(241.0f / 255.0f, 103.0f / 255.0f, 103.0f / 255.0f); //red
+    Color bottleB_color = new Color(164.0f / 255.0f, 89.0f / 255.0f, 209.0f / 255.0f); //purple
+    Color bottleC_color = new Color(255.0f / 255.0f, 184.0f / 255.0f, 76.0f / 255.0f); //orange
+
+    IEnumerator GetImageMessage(string image_URL)
+    {
+        UnityWebRequest request = UnityWebRequestTexture.GetTexture(image_URL); //create request
+        yield return request.SendWebRequest(); //wait for the request to complete
+
+        if (request.isNetworkError || request.isHttpError)
+        {
+            Debug.Log("image error");
+        }
+        else
+        {
+            //first, get the image from database
+
+            /* resize the Raw Image base on the ratio of the downloaded image */
+            if (downloaded_image.width > downloaded_image.height)
+            {
+                (...)
+            }
+            else
+            {
+                (...)
+            }
+            imageUI.texture = downloaded_image;
+        }
+    }
+
+    IEnumerator GetAudioMessage(string voice_URL)
+    {
+        (...)
+    }
+
+    void Start()
+    {
+        if (LoginManagement.input_userID != null && LoginManagement.input_OrderNumber != null)
+        {
+            (...) //Firstly, Get the userID and OrderNumber
+        }
+        else
+        {
+            (...)
+        }
+
+        (...Variables initialization)
+
+        GetData(); //get data from database for the first time
+
+        if (Drink1 == "" && Drink2 == "" && Drink3 == "") //if the drink havent set up yet,disable the liquid object
+        {
+            liquid_object.SetActive(false);
+        }
+        else
+        {
+            liquid_object.SetActive(true);
+        }
+
+        (...)
+
+        //https://discussions.unity.com/t/rotate-the-contents-of-a-texture/136686
+        Texture2D rotateTexture(Texture2D originalTexture, bool clockwise)
+        {
+            (...Rotate the image)
+        }
+
+        public void UploadText()
+        {
+            (...)
+        }
+
+        public void UploadImage()
+        {
+            //pick the image from gallery
+            NativeGallery.Permission permission = NativeGallery.GetImageFromGallery((image_local_path) =>
+            {
+                //check if the image is considered as "rotated"
+                string image_rotate = Convert.ToString(NativeGallery.GetImageProperties(image_local_path).orientation);
+                
+                if (image_local_path != null)
+                {
+                    Texture2D texture = NativeGallery.LoadImageAtPath(image_local_path, 1024); //max size
+                    if (texture == null)
+                    {
+                        return;
+                    }
+                    else
+                    {
+                        if (image_rotate== "Rotate90") //if original image has rotated 90
+                        {
+                            rotateTexture(texture,true);
+                        }
+                        byte[] Tex_bytes = texture.EncodeToPNG(); //save texture to png
+                        string save_texture_path = Path.Combine(Application.persistentDataPath, "MyImage.png");
+                        File.WriteAllBytes(save_texture_path, Tex_bytes); //save texture to folder
+    
+                        //tell firebase what is the image type
+                        var newMetadata = new MetadataChange();
+                        newMetadata.ContentType = "image/png";
+                        StorageReference save_folder_ref = storage_img_ref.Child("user_image.png"); //what name should the image saved as
+  
+                        string androidPath = "file://" + save_texture_path;
+  
+                        //upload image to storage database
+                        save_folder_ref.PutFileAsync(androidPath, newMetadata, null, CancellationToken.None).ContinueWith((Task<StorageMetadata> task) =>
+                        {
+                            (...)
+                        });
+                    }
+                }
+            });
+        }
+
+        public void HoldToRecord(){(...)}
+        public void EndRecord(){(...)}
+        public void PreviewAudio(){(...)}
+        public void UploadAudio(string audioPath){(...)}
+
+        public void Made_Drink_click(){(...)} // sent user to drink making page
+
+        public void UploadDrink(){(...)}
+
+        (public functions for making the customized drink * 6)
+
+        public void GetData(){(...)} // get data from database
+  
+  }
   ```
 
 ### 3. Receiver Page
-* Receiver_DataManager
+* Receiver_DataManager.cs
+  * Similar to "UploadManagement.cs".
+  * For getting the data from Firebase database
+  
+* VoiceManagement.cs
+  * Controlling bartender's animation and voice.
+
+* GiftController.cs
+  * Controlling the "Gifts" screen
+  * Controlling the displayment and interaction of the hybrid gift
+  * Using Vuforia
+
+* DrinkController.cs
+  * Controlling the display of the customized drink
+  * Using Vuforia
+  * Using shader to change the colour of the liquid
+  
+* BottleStateTracker.cs
+  * To detect whether the bottle is pouring liquid.
   ```
-  code blocks for commands
-  ```
-* VoiceManagement
-  ```
-  code blocks for commands
-  ```
-* GiftController
-  ```
-  code blocks for commands
-  ```
-* DrinkController
-  ```
-  code blocks for commands
-  ```
-* BottleStateTracker
-  ```
-  code blocks for commands
+  (...)
+
+  void Update()
+  {
+      Vector3 forward = tracker1.transform.TransformDirection(Vector3.forward) * ray_distance;
+      forward = tracker2.transform.TransformDirection(Vector3.forward) * ray_distance;
+      forward = tracker3.transform.TransformDirection(Vector3.forward) * (ray_distance + 0.5f);
+  }
+
+  private void FixedUpdate()
+  {
+      (...)
+
+      // Does the ray intersect any objects excluding the player layer
+      if (hit_result_1 || hit_result_2 || hit_result_3)
+      {
+          (...)
+      }
+      else
+      {
+          isPouring = false;
+      }
+  }
+  
   ```
 
 
